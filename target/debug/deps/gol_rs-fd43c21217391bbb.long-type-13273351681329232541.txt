@@ -1,0 +1,1 @@
+FlatMap<std::slice::Iter<'_, (i8, i8)>, FlatMap<RangeInclusive<i8>, FlatMap<RangeInclusive<i8>, (i8, i8), {closure@src/main.rs:6:73: 6:77}>, {closure@src/main.rs:6:50: 6:54}>, {closure@src/main.rs:6:23: 6:31}>
