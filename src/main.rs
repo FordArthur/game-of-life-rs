@@ -1,6 +1,6 @@
-use std::{collections::HashMap, env::args, thread::sleep, time::Duration};
+use std::{char, collections::HashMap, sync::mpsc::{channel, Receiver}, thread::{self, sleep}, time::Duration};
 
-use ncurses::{addstr, cbreak, clear, getmaxx, getmaxy, initscr, noecho, refresh, stdscr};
+use ncurses::{addstr, cbreak, clear, curs_set, getch, getmaxx, getmaxy, initscr, noecho, refresh, stdscr};
 
 type Grid = Vec<(u8, u8)>;
 
@@ -16,21 +16,37 @@ fn iteration(g: &Grid) -> Grid {
      .collect::<Vec<(u8, u8)>>()
 }
 
+fn listen_on() -> Receiver<char> {
+    let (tx, rx) = channel();
+    thread::spawn(move || loop {
+        tx.send(char::from_u32(getch() as u32).unwrap()).unwrap();
+    });
+    rx
+}
+
 fn main() {
     let mut grid: Grid = vec!((10, 10), (10, 11), (10, 12));
     initscr();
     noecho();
     cbreak();
+    curs_set(ncurses::CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+    let here = listen_on();
     loop {
         grid = iteration(&grid);
-        for x in 0..u8::try_from(getmaxx(stdscr())).unwrap() {
+        clear();
+        match here.try_recv() {
+            Ok(ch) => addstr(&format!("{}\n", ch)),
+            _ => addstr("type something you idiot\n"),
+        };
+
+        for x in 0..u8::try_from(getmaxx(stdscr())).unwrap() - 1 {
             for y in 0..u8::try_from(getmaxy(stdscr())).unwrap() {
                 addstr(if grid.contains(&(x, y)) { "#" } else { " " } );
             }
             addstr("\n");
         }
+
         refresh();
-        clear();
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(2));
     }
 }
